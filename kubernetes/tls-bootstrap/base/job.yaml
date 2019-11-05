@@ -1,0 +1,81 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job
+spec:
+  template:
+    metadata:
+      name: tls
+    spec:
+      serviceAccountName: sa
+      restartPolicy: OnFailure
+      initContainers:
+        - name: init-phase-certs
+          image: kubeadm
+          command:
+            - kubeadm
+            - init
+            - phase
+            - certs
+            - all
+            - --apiserver-cert-extra-sans=$(KUBE_APISERVER_SVC_NAME),$(KUBE_APISERVER_SVC_NAME).$(POD_NAMESPACE).svc.cluster.local
+            - --control-plane-endpoint=$(KUBE_APISERVER_SVC_NAME)
+          envFrom:
+            - configMapRef:
+                name: cm
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: kubeconfigs
+              mountPath: /etc/kubernetes
+            - name: k8s-certs
+              mountPath: /etc/kubernetes/pki
+            - name: etcd-certs-out
+              mountPath: /etc/kubernetes/pki/etcd
+        - name: init-phase-kubeconfig
+          image: kubeadm
+          command:
+            - kubeadm
+            - init
+            - phase
+            - kubeconfig
+            - all
+            - --control-plane-endpoint=$(KUBE_APISERVER_SVC_NAME)
+          envFrom:
+            - configMapRef:
+                name: cm
+          volumeMounts:
+            - name: kubeconfigs
+              mountPath: /etc/kubernetes
+            - name: k8s-certs
+              mountPath: /etc/kubernetes/pki
+      containers:
+        - name: upload-secrets
+          image: kubectl
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              kubectl create secret generic kubeconfigs --from-file /etc/kubernetes
+              kubectl create secret generic k8s-certs --from-file /etc/kubernetes/pki
+          envFrom:
+            - configMapRef:
+                name: cm
+          volumeMounts:
+            - name: kubeconfigs
+              mountPath: /etc/kubernetes
+            - name: k8s-certs
+              mountPath: /etc/kubernetes/pki
+      volumes:
+        - name: kubeconfigs
+          emptyDir: {}
+        - name: k8s-certs
+          emptyDir: {}
+        - name: etcd-certs-in
+          emptyDir: {}
+        - name: etcd-certs-out
+          emptyDir: {}

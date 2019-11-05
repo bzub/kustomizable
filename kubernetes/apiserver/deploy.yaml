@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
+  replicas: 1
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+        - name: kube-apiserver
+          image: hyperkube
+          command:
+            - kube-apiserver
+            - --advertise-address=$(POD_IP)
+            - --allow-privileged=true
+            - --authorization-mode=Node,RBAC
+            - --client-ca-file=/etc/kubernetes/pki/ca.crt
+            - --enable-admission-plugins=NodeRestriction
+            - --enable-bootstrap-token-auth=true
+            - --endpoint-reconciler-type=none
+            - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt
+            - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt
+            - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key
+            - --etcd-servers=https://$(ETCD_CLIENT_SVC_NAME):2379
+            - --insecure-port=0
+            - --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt
+            - --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key
+            - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+            - --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt
+            - --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key
+            - --requestheader-allowed-names=front-proxy-client
+            - --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt
+            - --requestheader-extra-headers-prefix=X-Remote-Extra-
+            - --requestheader-group-headers=X-Remote-Group
+            - --requestheader-username-headers=X-Remote-User
+            - --secure-port=$(K8S_API_PORT)
+            - --service-account-key-file=/etc/kubernetes/pki/sa.pub
+            - --service-cluster-ip-range=$(K8S_SERVICE_CIDR)
+            - --tls-cert-file=/etc/kubernetes/pki/apiserver.crt
+            - --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          envFrom:
+            - configMapRef:
+                name: cm
+          volumeMounts:
+            - name: certs
+              mountPath: /etc/kubernetes/pki
+              readOnly: true
+            - name: etcd-certs
+              mountPath: /etc/kubernetes/pki/etcd
+              readOnly: true
+          ports:
+            - name: https
+              containerPort: 6443
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "250m"
+            limits:
+              memory: "1000Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: https
+            successThreshold: 1
+            failureThreshold: 2
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: https
+            successThreshold: 1
+            failureThreshold: 2
+            initialDelaySeconds: 10
+            periodSeconds: 30
+        - name: metrics-proxy
+          image: hyperkube
+          command:
+            - kubectl
+            - --kubeconfig=/etc/kubernetes/kubeconfigs/admin.conf
+            - proxy
+            - --accept-hosts=.*
+            - --accept-paths=/metrics
+            - --address=0.0.0.0
+            - --port=8080
+          volumeMounts:
+            - name: kubeconfigs
+              mountPath: /etc/kubernetes/kubeconfigs
+          ports:
+            - name: metrics
+              containerPort: 8080
+          resources:
+            requests:
+              memory: "50Mi"
+              cpu: "50m"
+            limits:
+              memory: "100Mi"
+              cpu: "100m"
+      volumes:
+        - name: kubeconfigs
+          secret:
+            secretName: kubeconfigs
+        - name: certs
+          secret:
+            secretName: k8s-certs
+        - name: etcd-certs
+          secret:
+            secretName: etcd-certs

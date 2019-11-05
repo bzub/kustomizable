@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job
+spec:
+  template:
+    metadata:
+      name: tls
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: bootstrap-token
+          image: kubeadm
+          command:
+            - kubeadm
+            - init
+            - phase
+            - bootstrap-token
+            - --kubeconfig=/etc/kubernetes/admin.conf
+            - --skip-token-print
+          volumeMounts:
+            - name: kubeconfigs
+              mountPath: /etc/kubernetes
+      volumes:
+        - name: kubeconfigs
+          secret:
+            secretName: kubeconfigs
+            items:
+              - key: admin.conf
+                path: admin.conf

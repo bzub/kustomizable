@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
+  replicas: 1
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+        - name: kube-scheduler
+          image: hyperkube
+          command:
+            - kube-scheduler
+            - --authentication-kubeconfig=/etc/kubernetes/scheduler.conf
+            - --authorization-kubeconfig=/etc/kubernetes/scheduler.conf
+            - --bind-address=0.0.0.0
+            - --kubeconfig=/etc/kubernetes/scheduler.conf
+            - --leader-elect=true
+          volumeMounts:
+            - name: kubeconfigs
+              mountPath: /etc/kubernetes
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: 10259
+            initialDelaySeconds: 15
+            timeoutSeconds: 15
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "250m"
+            limits:
+              memory: "1000Mi"
+              cpu: "500m"
+          ports:
+            - name: http-metrics
+              protocol: TCP
+              containerPort: 10251
+      volumes:
+        - name: kubeconfigs
+          secret:
+            secretName: kubeconfigs

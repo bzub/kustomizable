@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-apiserver-proxy-ds
+spec:
+  template:
+    spec:
+      dnsPolicy: Default
+      containers:
+        - name: proxy
+          image: socat
+          command:
+            - socat
+            - -d
+            - -d
+            - TCP-LISTEN:$(APISERVER_PORT),fork
+            - TCP:$(APISERVER_HOST):$(APISERVER_PORT)
+          envFrom:
+            - configMapRef:
+                name: kube-apiserver-proxy-cm
+          ports:
+            - name: https
+              containerPort: 6443
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists

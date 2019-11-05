@@ -1,0 +1,54 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - pdb.yaml
+  - client-svc.yaml
+  - headless-svc.yaml
+  - peer-svc.yaml
+  - sts.yaml
+
+namePrefix: etcd-
+
+images:
+  - name: etcd
+    newName: gcr.io/etcd-development/etcd
+    newTag: v3.4.3
+
+commonLabels:
+  app.kubernetes.io/name: etcd
+
+commonAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/metrics"
+  prometheus.io/port: "8080"
+  prometheus.io/scheme: "http"
+
+configMapGenerator:
+  # Each item in this ConfigMap is evaluated by a shell before etcd is started.
+  # See: deploy.yaml
+  - name: cm
+    literals:
+      - ETCD_NAME=$(hostname)
+      - ETCD_DISCOVERY_SRV=etcd-headless-svc.${NAMESPACE}.svc.cluster.local
+      - ETCD_ADVERTISE_CLIENT_URLS=https://$(hostname):2379
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://$(hostname):2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_INITIAL_CLUSTER_TOKEN=default
+      - ETCD_TRUSTED_CA_FILE=/etc/kubernetes/pki/etcd/ca.crt
+      - ETCD_CERT_FILE=/etc/kubernetes/pki/etcd/server.crt
+      - ETCD_KEY_FILE=/etc/kubernetes/pki/etcd/server.key
+      - ETCD_CLIENT_CERT_AUTH=true
+      - ETCD_PEER_TRUSTED_CA_FILE=/etc/kubernetes/pki/etcd/ca.crt
+      - ETCD_PEER_CERT_FILE=/etc/kubernetes/pki/etcd/peer.crt
+      - ETCD_PEER_KEY_FILE=/etc/kubernetes/pki/etcd/peer.key
+      - ETCD_PEER_CLIENT_CERT_AUTH=true
+      - ETCD_LOGGER=zap
+      - ETCD_DATA_DIR=/var/lib/etcd
+      - ETCD_LISTEN_PEER_URLS=https://0.0.0.0:2380
+      - ETCD_LISTEN_CLIENT_URLS=https://0.0.0.0:2379
+      - ETCD_LISTEN_METRICS_URLS=http://0.0.0.0:8080
+      - ETCDCTL_DISCOVERY_SRV=etcd-headless-svc.${NAMESPACE}.svc.cluster.local
+      - ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt
+      - ETCDCTL_CERT=/etc/kubernetes/pki/etcd/client.crt
+      - ETCDCTL_KEY=/etc/kubernetes/pki/etcd/client.key

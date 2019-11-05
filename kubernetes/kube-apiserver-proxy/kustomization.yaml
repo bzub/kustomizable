@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+images:
+  - name: socat
+    newName: docker.io/alpine/socat
+    newTag: 1.7.3.3-r0
+
+resources:
+  - kubernetes-svc.yaml
+  - ds.yaml
+
+namespace: default
+
+commonLabels:
+  app.kubernetes.io/name: kube-apiserver-proxy
+
+configMapGenerator:
+  - name: kube-apiserver-proxy-cm
+    literals:
+      - APISERVER_HOST=external-apiserver.example
+      - APISERVER_PORT=6443

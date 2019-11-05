@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+images:
+  - name: kubeadm
+    newName: wise2c/kubeadm-version
+    newTag: v1.16.2
+  - name: kubectl
+    newName: k8s.gcr.io/hyperkube
+    newTag: v1.16.2
+
+resources:
+  - job.yaml
+  - role.yaml
+  - rolebinding.yaml
+  - sa.yaml
+
+namePrefix: kubernetes-tls-bootstrap-
+
+commonLabels:
+  app.kubernetes.io/name: kubernetes-tls-bootstrap
+
+configMapGenerator:
+  - name: cm
+    literals:
+      - KUBE_APISERVER_SVC_NAME=kube-apiserver-svc
+      - K8S_VIP_FQDN=kube-api.example.domain
+      - K8S_API_PORT=6443

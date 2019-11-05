@@ -1,0 +1,33 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+images:
+  - name: cfssl
+    newName: docker.io/jitesoft/cfssl
+    newTag: "1a911ca"
+  - name: kubectl
+    newName: k8s.gcr.io/hyperkube
+    newTag: v1.16.2
+
+resources:
+  - job.yaml
+  - role.yaml
+  - rolebinding.yaml
+  - sa.yaml
+
+namePrefix: etcd-tls-bootstrap-
+
+commonLabels:
+  app.kubernetes.io/name: etcd-tls-bootstrap
+
+configMapGenerator:
+  - name: cm
+    literals:
+      - SECRET_NAME=etcd-certs
+      - CLIENT_SVC_NAME=etcd-client-svc
+      - HEADLESS_SVC_NAME=etcd-headless-svc
+      - PEER_SVC_NAME=etcd-peer-svc
+      - VIP_FQDN=
+      - STS_NAME=etcd-sts
+      - REPLICAS=1
+      - K8S_CLUSTER_DOMAIN=cluster.local

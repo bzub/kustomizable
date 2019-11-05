@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+images:
+  - name: hyperkube
+    newName: k8s.gcr.io/hyperkube
+    newTag: v1.16.2
+
+resources:
+  - deploy.yaml
+  - svc.yaml
+
+namePrefix: kube-apiserver-
+
+commonLabels:
+  app.kubernetes.io/name: kube-apiserver
+
+commonAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/metrics"
+  prometheus.io/port: "8080"
+  prometheus.io/scheme: "http"
+
+configMapGenerator:
+  - name: cm
+    literals:
+      - ETCD_CLIENT_SVC_NAME=etcd-client-svc
+      - K8S_SERVICE_CIDR=10.4.0.0/24
+      - K8S_API_PORT=6443

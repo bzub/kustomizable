@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - clusterrolebinding.yaml
+  - sa.yaml
+  - volume-scheduler-clusterrolebinding.yaml
+
+namespace: kube-system
+namePrefix: kube-scheduler-
+
+commonLabels:
+  app.kubernetes.io/name: kube-scheduler
