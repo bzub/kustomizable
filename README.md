@@ -8,7 +8,9 @@ Kubernetes clusters.
 
 - Base kustomizations should:
   - Define a ConfigMap in the `kustomization.yaml` to configure the application.
-  - Implement generic best-practices like {liveness,readiness} probes.
+  - Implement generic best-practices like:
+    - {liveness,readiness} probes.
+    - Prometheus scrape annotations.
   - Reference secrets by name, leaving their implementation to the user.
   - Be small, as in deployable to a default minikube cluster.
     - 1 replica where applicable.

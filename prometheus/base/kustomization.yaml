@@ -1,0 +1,119 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+images:
+  - name: prometheus
+    newName: docker.io/prom/prometheus
+    newTag: v2.13.1
+
+resources:
+  - sts.yaml
+  - svc.yaml
+  - sa.yaml
+  - role.yaml
+  - rolebinding.yaml
+
+namespace: prometheus
+namePrefix: prometheus-
+
+commonLabels:
+  app.kubernetes.io/name: prometheus
+
+commonAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/metrics"
+  prometheus.io/port: "9090"
+  prometheus.io/scheme: "http"
+
+configMapGenerator:
+  - name: global
+    literals:
+      - |-
+        defaults.yaml=
+          evaluation_interval: 30s
+          scrape_interval: 30s
+          external_labels:
+            prometheus: monitoring/k8s
+            prometheus_replica: $(POD_NAME)
+
+  - name: rule-files
+    literals:
+      - |-
+        defaults.yaml=
+          - /etc/prometheus/rules/*.yaml
+
+  - name: scrape-configs
+    literals:
+      # https://github.com/prometheus/prometheus/blob/release-2.13/documentation/examples/prometheus-kubernetes.yml
+      - |-
+        defaults.yaml=
+          - job_name: 'kubernetes-service-endpoints'
+            tls_config:
+              insecure_skip_verify: true
+              ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            kubernetes_sd_configs:
+              - role: pod
+                namespaces:
+                  names:
+                    - namespace-replaced-by-init-container
+            relabel_configs:
+              # Only scrape pods that have a "prometheus.io/scrape = true"
+              # annotation.
+              - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                action: keep
+                regex: true
+              # Customize metric path based on pod
+              # "prometheus.io/path = <metric path>" annotation.
+              - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                action: replace
+                target_label: __metrics_path__
+                regex: (.+)
+              # Scrape only single, desired port for the pod based on pod
+              # "prometheus.io/port = <port>" annotation.
+              # Note that __address__ is modified here, so if pod containers'
+              # ports are declared, they all will be ignored.
+              - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                action: replace
+                regex: ([^:]+)(?::\d+)?;(\d+)
+                replacement: $1:$2
+                target_label: __address__
+              # relabel to configure scrape scheme for all service scrape targets
+              # based on endpoints "prometheus.io/scheme = <scheme>" annotation.
+              - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
+                action: replace
+                target_label: __scheme__
+                regex: (https?)
+              - action: labelmap
+                regex: __meta_kubernetes_pod_label_(.+)
+              - source_labels: [__meta_kubernetes_namespace]
+                action: replace
+                target_label: kubernetes_namespace
+              - source_labels: [__meta_kubernetes_pod_name]
+                action: replace
+                target_label: kubernetes_pod_name
+
+  - name: alerting
+    literals:
+      - |-
+        defaults.yaml=
+          alert_relabel_configs:
+          - action: labeldrop
+            regex: prometheus_replica
+          alertmanagers:
+            - path_prefix: /
+              scheme: http
+              kubernetes_sd_configs:
+                - role: endpoints
+                  namespaces:
+                    names:
+                      - namespace-replaced-by-init-container
+              relabel_configs:
+                - action: keep
+                  source_labels:
+                    - __meta_kubernetes_service_name
+                  regex: alertmanager-main
+                - action: keep
+                  source_labels:
+                    - __meta_kubernetes_endpoint_port_name
+                  regex: web

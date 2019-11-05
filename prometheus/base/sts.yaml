@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sts
+spec:
+  podManagementPolicy: Parallel
+  replicas: 2
+  serviceName: svc
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        fsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: sa
+      terminationGracePeriodSeconds: 600
+      volumes:
+        - name: db
+          emptyDir: {}
+        - name: config-out
+          emptyDir: {}
+        - name: configs-global
+          configMap:
+            name: global
+        - name: configs-rule-files
+          configMap:
+            name: rule-files
+        - name: configs-scrape-configs
+          configMap:
+            name: scrape-configs
+        - name: configs-alerting
+          configMap:
+            name: alerting
+
+      initContainers:
+        - name: config-combine-snippets
+          image: prometheus
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              for config_dir in /etc/prometheus/configs/*; do
+                config_key="$(basename "${config_dir}"|sed 's/-/_/g')"
+                echo -n "${config_key}:"
+                for snippet_file in ${config_dir}/*; do
+                  cat "${snippet_file}"
+                done
+                echo
+              done > /prometheus/config/prometheus.yml
+          volumeMounts:
+            - name: config-out
+              mountPath: /prometheus/config
+            - name: configs-global
+              mountPath: /etc/prometheus/configs/global
+              readOnly: true
+            - name: configs-rule-files
+              mountPath: /etc/prometheus/configs/rule-files
+              readOnly: true
+            - name: configs-scrape-configs
+              mountPath: /etc/prometheus/configs/scrape-configs
+              readOnly: true
+            - name: configs-alerting
+              mountPath: /etc/prometheus/configs/alerting
+              readOnly: true
+        - name: config-set-namespace
+          image: prometheus
+          command:
+            - sed
+            - -e
+            - s/namespace-replaced-by-init-container$/$(NAMESPACE)/
+            - -i
+            - /prometheus/config/prometheus.yml
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: config-out
+              mountPath: /prometheus/config
+
+      containers:
+        - name: prometheus
+          image: prometheus
+          args:
+            - --config.file=/prometheus/config/prometheus.yml
+            - --web.console.templates=/etc/prometheus/consoles
+            - --web.console.libraries=/etc/prometheus/console_libraries
+            - --storage.tsdb.path=/prometheus/data
+            - --storage.tsdb.retention.time=24h
+            - --storage.tsdb.no-lockfile
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: web
+              scheme: HTTP
+            failureThreshold: 6
+            periodSeconds: 5
+            timeoutSeconds: 3
+          ports:
+            - containerPort: 9090
+              name: web
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 120
+            httpGet:
+              path: /-/ready
+              port: web
+              scheme: HTTP
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests:
+              memory: 400Mi
+          volumeMounts:
+            - name: db
+              mountPath: /prometheus/data
+            - name: config-out
+              mountPath: /prometheus/config
