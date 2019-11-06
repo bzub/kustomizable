@@ -7,8 +7,6 @@ spec:
   podManagementPolicy: Parallel
   replicas: 1
   template:
-    metadata:
-      name: etcd
     spec:
       containers:
         - name: etcd

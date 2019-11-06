@@ -4,8 +4,6 @@ metadata:
   name: job
 spec:
   template:
-    metadata:
-      name: tls
     spec:
       restartPolicy: OnFailure
       containers:
