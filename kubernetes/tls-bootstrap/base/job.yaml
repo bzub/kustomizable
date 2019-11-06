@@ -18,7 +18,7 @@ spec:
             - phase
             - certs
             - all
-            - --apiserver-cert-extra-sans=$(KUBE_APISERVER_SVC_NAME),$(KUBE_APISERVER_SVC_NAME).$(POD_NAMESPACE).svc.cluster.local
+            - --apiserver-cert-extra-sans=127.0.0.1,::1,$(KUBE_APISERVER_SVC_NAME),$(KUBE_APISERVER_SVC_NAME).$(POD_NAMESPACE).svc.cluster.local
             - --control-plane-endpoint=$(KUBE_APISERVER_SVC_NAME)
           envFrom:
             - configMapRef:
