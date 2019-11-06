@@ -10,11 +10,11 @@
 
 ```sh
 # Create a namespace
-kubectl create namespace prometheus-example
+kubectl create namespace example
 
 # Build and create the resources
 kustomize build github.com/bzub/kustomizable/prometheus/base | \
-  kubectl -n prometheus-example create -f -
+  kubectl -n example create -f -
 ```
 
 ## Implementation
