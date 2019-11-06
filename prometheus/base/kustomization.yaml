@@ -13,7 +13,6 @@ resources:
   - role.yaml
   - rolebinding.yaml
 
-namespace: prometheus
 namePrefix: prometheus-
 
 commonLabels:
