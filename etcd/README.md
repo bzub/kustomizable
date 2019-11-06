@@ -20,9 +20,9 @@ kubectl create namespace etcd-example
 
 # Build and create the tls-bootstrap job resources
 kustomize build github.com/bzub/kustomizable/etcd/tls-bootstrap | \
-  kubectl -n kink-example create -f -
+  kubectl -n etcd-example create -f -
 
 # Build and create the etcd resources
 kustomize build github.com/bzub/kustomizable/etcd/base | \
-  kubectl -n kink-example create -f -
+  kubectl -n etcd-example create -f -
 ```
