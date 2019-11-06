@@ -1,0 +1,10 @@
+# https://kubeless.io/docs/function-controller-configuration/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - read-clusterrolebinding.yaml
+  - read-clusterrole.yaml
+  - deployer-clusterrole.yaml
+
+namePrefix: kubeless-controller-

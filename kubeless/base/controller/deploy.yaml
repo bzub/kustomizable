@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy
+spec:
+  template:
+    spec:
+      serviceAccountName: sa
+      containers:
+        - name: kubeless-function-controller
+          image: kubeless-function-controller
+          env:
+            - name: KUBELESS_INGRESS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  key: ingress-enabled
+                  name: kubeless-config
+            - name: KUBELESS_SERVICE_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  key: service-type
+                  name: kubeless-config
+            - name: KUBELESS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUBELESS_CONFIG
+              value: kubeless-config
+        - name: http-trigger-controller
+          image: kubeless-http-trigger-controller
+          env:
+            - name: KUBELESS_INGRESS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  key: ingress-enabled
+                  name: kubeless-config
+            - name: KUBELESS_SERVICE_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  key: service-type
+                  name: kubeless-config
+            - name: KUBELESS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUBELESS_CONFIG
+              value: kubeless-config
+        - name: cronjob-trigger-controller
+          image: kubeless-cronjob-trigger-controller
+          env:
+            - name: KUBELESS_INGRESS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  key: ingress-enabled
+                  name: kubeless-config
+            - name: KUBELESS_SERVICE_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  key: service-type
+                  name: kubeless-config
+            - name: KUBELESS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUBELESS_CONFIG
+              value: kubeless-config

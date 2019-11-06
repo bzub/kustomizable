@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - controller
+
+commonLabels:
+  app.kubernetes.io/name: kubeless-controller
+
+configMapGenerator:
+  - name: kubeless-config
+    files:
+      - runtime-images=runtime-images.json
+    literals:
+      - builder-image=kubeless/function-image-builder:v1.0.5
+      - builder-image-secret=
+      - deployment={}
+      - enable-build-step="false"
+      - functions-namespace=kubeless
+      - function-registry-tls-verify="true"
+      - ingress-enabled="false"
+      - provision-image=kubeless/unzip@sha256:4863100364496255de9bf8722a220dad7143ab277ac72435876eb8c93936e9d7
+      - provision-image-secret=
+      - service-type=ClusterIP
+
+generatorOptions:
+  disableNameSuffixHash: true
