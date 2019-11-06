@@ -27,7 +27,7 @@ kustomize build github.com/bzub/kustomizable/kink/overlays/with-tls-bootstrap | 
 tools/fetch-secret.sh -n kink-example kubeconfigs
 
 # Proxy kube-apiserver to your local machine.
-kubectl -n kink-example port-forward 6443 &
+kubectl -n kink-example port-forward svc/kube-apiserver-svc 6443 &
 
 # Communicate with the new cluster.
 kubectl --kubeconfig secrets/admin.conf --server https://127.0.0.1:6443 get ns
