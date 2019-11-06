@@ -3,9 +3,7 @@ kind: Kustomization
 
 resources:
   - pdb.yaml
-  - client-svc.yaml
-  - headless-svc.yaml
-  - peer-svc.yaml
+  - svc.yaml
   - sts.yaml
 
 namePrefix: etcd-
@@ -30,7 +28,7 @@ configMapGenerator:
   - name: cm
     literals:
       - ETCD_NAME=$(hostname)
-      - ETCD_DISCOVERY_SRV=etcd-headless-svc.${NAMESPACE}.svc.cluster.local
+      - ETCD_DISCOVERY_SRV=etcd-svc.${NAMESPACE}.svc.cluster.local
       - ETCD_ADVERTISE_CLIENT_URLS=https://$(hostname):2379
       - ETCD_INITIAL_ADVERTISE_PEER_URLS=https://$(hostname):2380
       - ETCD_INITIAL_CLUSTER_STATE=new
@@ -48,7 +46,7 @@ configMapGenerator:
       - ETCD_LISTEN_PEER_URLS=https://0.0.0.0:2380
       - ETCD_LISTEN_CLIENT_URLS=https://0.0.0.0:2379
       - ETCD_LISTEN_METRICS_URLS=http://0.0.0.0:8080
-      - ETCDCTL_DISCOVERY_SRV=etcd-headless-svc.${NAMESPACE}.svc.cluster.local
+      - ETCDCTL_DISCOVERY_SRV=etcd-svc.${NAMESPACE}.svc.cluster.local
       - ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt
       - ETCDCTL_CERT=/etc/kubernetes/pki/etcd/client.crt
       - ETCDCTL_KEY=/etc/kubernetes/pki/etcd/client.key

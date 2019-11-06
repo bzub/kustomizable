@@ -24,9 +24,7 @@ configMapGenerator:
   - name: cm
     literals:
       - SECRET_NAME=etcd-certs
-      - CLIENT_SVC_NAME=etcd-client-svc
-      - HEADLESS_SVC_NAME=etcd-headless-svc
-      - PEER_SVC_NAME=etcd-peer-svc
+      - SVC_NAME=etcd-svc
       - VIP_FQDN=
       - STS_NAME=etcd-sts
       - REPLICAS=1

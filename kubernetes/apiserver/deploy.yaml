@@ -37,7 +37,7 @@ spec:
             - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt
             - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt
             - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key
-            - --etcd-servers=https://$(ETCD_CLIENT_SVC_NAME):2379
+            - --etcd-servers=https://$(ETCD_SVC_NAME):2379
             - --insecure-port=0
             - --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt
             - --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key

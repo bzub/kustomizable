@@ -24,6 +24,6 @@ commonAnnotations:
 configMapGenerator:
   - name: cm
     literals:
-      - ETCD_CLIENT_SVC_NAME=etcd-client-svc
+      - ETCD_SVC_NAME=etcd-svc
       - K8S_SERVICE_CIDR=10.4.0.0/24
       - K8S_API_PORT=6443

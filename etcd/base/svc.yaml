@@ -1,9 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: peer-svc
+  name: svc
 spec:
+  clusterIP: None
   publishNotReadyAddresses: true
   ports:
     - port: 2380
-      name: peer-ssl
+      name: etcd-server-ssl
+    - port: 2379
+      name: etcd-client-ssl

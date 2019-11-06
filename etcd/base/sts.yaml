@@ -3,7 +3,7 @@ kind: StatefulSet
 metadata:
   name: sts
 spec:
-  serviceName: headless-svc
+  serviceName: svc
   podManagementPolicy: Parallel
   replicas: 1
   template:

@@ -42,7 +42,7 @@ spec:
                 }
               }' > ca-config.json
 
-              addresses="localhost,127.0.0.1,0:0:0:0:0:0:0:1,${PEER_SVC_NAME},${CLIENT_SVC_NAME},${HEADLESS_SVC_NAME}"
+              addresses="localhost,127.0.0.1,0:0:0:0:0:0:0:1,${SVC_NAME}"
 
               if [ -n "${VIP_FQDN}" ]; then
                 addresses="${addresses},${VIP_FQDN}"
@@ -51,10 +51,8 @@ spec:
               last="$((REPLICAS - 1))"
               for i in $(seq 0 "${last}"); do
                 addresses="${addresses},${STS_NAME}-${i}"
-                addresses="${addresses},${STS_NAME}-${i}.${PEER_SVC_NAME}"
-                addresses="${addresses},${STS_NAME}-${i}.${CLIENT_SVC_NAME}"
-                addresses="${addresses},${STS_NAME}-${i}.${HEADLESS_SVC_NAME}"
-                addresses="${addresses},${STS_NAME}-${i}.${HEADLESS_SVC_NAME}.${NAMESPACE}.svc.${K8S_CLUSTER_DOMAIN}"
+                addresses="${addresses},${STS_NAME}-${i}.${SVC_NAME}"
+                addresses="${addresses},${STS_NAME}-${i}.${SVC_NAME}.${NAMESPACE}.svc.${K8S_CLUSTER_DOMAIN}"
               done
 
               name=server
