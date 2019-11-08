@@ -25,8 +25,13 @@ Using [fetch-secret.sh](/tools/fetch-secret.sh) from this repo:
 kustomize build github.com/bzub/kustomizable/kink/kubeadm-bootstrap | \
   kubectl -n kube-system create -f -
 
-fetch-secret.sh -n kube-system kubelet-bootstrap.conf
+fetch-secret.sh -n kube-system kubelet-bootstrap
 ```
+
+At this point you will want to modify the `server: ` part of
+`kubelet-bootstrap.conf` to something that points to your cluster apiserver(s).
+This endpoint is configurable via
+[ConfigMap/kustomization](kustomization.yaml), too.
 
 Then, copy `kubelet-bootstrap.conf` to a machine you want to add to the cluster
 and run:
