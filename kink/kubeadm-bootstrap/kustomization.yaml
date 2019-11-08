@@ -13,3 +13,8 @@ namePrefix: kubeadm-bootstrap-
 
 commonLabels:
   app.kubernetes.io/name: kubeadm-bootstrap
+
+configMapGenerator:
+  - name: cm
+    literals:
+      - KUBELET_API_ENDPOINT=https://k8s.example.domain:6334

@@ -6,23 +6,60 @@ spec:
   template:
     spec:
       restartPolicy: OnFailure
-      containers:
-        - name: bootstrap-token
+      initContainers:
+        - name: create-in-cluster-kubeconfig
           image: kubeadm
           command:
-            - kubeadm
-            - init
-            - phase
-            - bootstrap-token
-            - --kubeconfig=/etc/kubernetes/admin.conf
-            - --skip-token-print
+            - sh
+            - -ec
+            - |
+              kubeconfig=/etc/kubernetes/admin.conf
+
+              # Generate an in-cluster kubeconfig for kubeadm.
+              kubectl config --kubeconfig=${kubeconfig} set-cluster in-cluster --server='https://kubernetes.default.svc' --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              kubectl config --kubeconfig=${kubeconfig} set-credentials in-cluster --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              kubectl config --kubeconfig=${kubeconfig} set-context in-cluster --user=in-cluster --cluster=in-cluster
+              kubectl config --kubeconfig=${kubeconfig} use-context in-cluster
+          volumeMounts:
+            - name: kubeconfigs
+              mountPath: /etc/kubernetes
+        - name: kubeadm-init-phase-bootstrap-token
+          image: kubeadm
+          command:
+            - sh
+            - -ec
+            - |
+              output="$(kubeadm init phase bootstrap-token)"
+
+              # Censor the token from logs.
+              echo "${output}"|grep -vF "Using token: "
+
+              # Save the bootstrap token to a file.
+              echo "${output}"|grep -F "Using token: "|grep -oE '[^ ]+$' > \
+                /etc/kubernetes/bootstrap-token
+          volumeMounts:
+            - name: kubeconfigs
+              mountPath: /etc/kubernetes
+      containers:
+        - name: create-kubelet-bootstrap-kubeconfig-secret
+          image: kubeadm
+          command:
+            - sh
+            - -ec
+            - |
+              kubeconfig=/etc/kubernetes/kubelet-bootstrap.conf
+              kubectl config --kubeconfig=${kubeconfig} set-cluster bootstrap --embed-certs --server=${KUBELET_API_ENDPOINT} --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              kubectl config --kubeconfig=${kubeconfig} set-credentials kubelet-bootstrap --token=$(cat /etc/kubernetes/bootstrap-token)
+              kubectl config --kubeconfig=${kubeconfig} set-context bootstrap --user=kubelet-bootstrap --cluster=bootstrap
+              kubectl config --kubeconfig=${kubeconfig} use-context bootstrap
+
+              kubectl create secret generic kubelet-bootstrap --from-file=${kubeconfig}
+          envFrom:
+            - configMapRef:
+                name: cm
           volumeMounts:
             - name: kubeconfigs
               mountPath: /etc/kubernetes
       volumes:
         - name: kubeconfigs
-          secret:
-            secretName: kubeconfigs
-            items:
-              - key: admin.conf
-                path: admin.conf
+          emptyDir: {}
