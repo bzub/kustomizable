@@ -23,9 +23,31 @@ commonLabels:
 configMapGenerator:
   - name: cm
     literals:
+      # The name of the secret to be created.
       - SECRET_NAME=etcd-certs
-      - SVC_NAME=etcd-svc
-      - VIP_FQDN=
-      - STS_NAME=etcd-sts
-      - REPLICAS=1
-      - K8S_CLUSTER_DOMAIN=cluster.local
+      # IP addresses and DNS names for server TLS SANs.
+      - TLS_HOSTS=localhost,127.0.0.1,::1,etcd-svc,etcd-sts-0.etcd-svc.example.svc.cluster.local
+      - |-
+        cfssl-ca-config.json=
+        {
+          "signing": {
+            "default": {
+              "expiry": "43800h",
+              "usages": [
+                "signing",
+                "key encipherment",
+                "server auth",
+                "client auth"
+              ]
+            }
+          }
+        }
+      - |-
+        cfssl-tls-template.json=
+        {
+          "CN": "_NAME_",
+          "key": {
+            "algo": "rsa",
+            "size": 2048
+          }
+        }
